@@ -15,7 +15,6 @@ use ray::Ray;
 
 mod hitable;
 mod sphere;
-mod triangle;
 mod material;
 mod camera;
 mod texture;
@@ -23,20 +22,31 @@ mod aabb;
 
 extern crate clap;
 use clap::{Arg, App};
+
+fn hit_sphere(center: Vec3, radius: f32, ray: &Ray) -> bool {
+    let oc = ray.origin() - center;
+    let a = ray.direction().dot(ray.direction());
+    let b = 2.0 * oc.dot(ray.direction());
+    let c = oc.dot(oc) - radius * radius;
+    let discriminant = b*b - 4.0*a*c;
+
+    discriminant > 0.0
+}
  
 fn color(ray: &Ray) -> Vec3 {
+    if hit_sphere(Vec3::new(0.0, 0.0, -1.0), 0.5, ray) {
+        return Vec3::new(1.0, 0.0, 0.0);
+    }
     let unit_direction = Vec3::unit_vector(ray.direction());
 
     let t = 0.5 * (unit_direction.y() + 1.0);
 
-    return (1.0 - t) * Vec3::new(1.0, 1.0, 1.0) + t * Vec3::new(0.5, 0.7, 1.0);
+    (1.0 - t) * Vec3::new(1.0, 1.0, 1.0) + t * Vec3::new(0.5, 0.7, 1.0)
 }
 
 fn main() {
     //Setup args
     let matches = App::new("Pathtracer")
-                        .arg(Arg::with_name("INPUT")
-                                    .required(true))
                         .arg(Arg::with_name("samples_per_pixel")
                                     .short("s")
                                     .long("spp")
@@ -59,7 +69,6 @@ fn main() {
                                     .takes_value(true))
                         .get_matches();
 
-    let filename = matches.value_of("INPUT").unwrap();
     let samples_per_pixel = matches.value_of("samples_per_pixel").unwrap_or("100");
     let image_width = matches.value_of("width").unwrap_or("480");
     let image_height = matches.value_of("height").unwrap_or("270");
@@ -69,7 +78,7 @@ fn main() {
     let image_width = image_width.parse::<u32>().unwrap();
     let image_height = image_height.parse::<u32>().unwrap();
 
-    println!("Generating a {}x{}@{}spp render of {}, saving to {}", image_width, image_height, samples_per_pixel, filename, output_filename);
+    println!("Generating a {}x{}@{}spp render, saving to {}", image_width, image_height, samples_per_pixel, output_filename);
 
     // Setup camera rays
     let aspect_ratio = image_width as f32 / image_height  as f32;

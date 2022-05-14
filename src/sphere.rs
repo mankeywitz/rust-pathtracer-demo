@@ -1,4 +1,3 @@
-use aabb::AABB;
 use vec3::Vec3;
 use ray::Ray;
 use material::Material;
@@ -49,9 +48,5 @@ impl Hitable for Sphere {
             }
         }
         None
-    }
-
-    fn bounding_box(&self) -> AABB {
-        AABB::new(self.center - Vec3::new(self.radius, self.radius, self.radius), self.center + Vec3::new(self.radius, self.radius, self.radius))
     }
 }
