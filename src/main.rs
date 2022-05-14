@@ -11,6 +11,8 @@ mod vec3;
 use vec3::Vec3;
 
 mod ray;
+use ray::Ray;
+
 mod hitable;
 mod sphere;
 mod triangle;
@@ -22,6 +24,13 @@ mod aabb;
 extern crate clap;
 use clap::{Arg, App};
  
+fn color(ray: &Ray) -> Vec3 {
+    let unit_direction = Vec3::unit_vector(ray.direction());
+
+    let t = 0.5 * (unit_direction.y() + 1.0);
+
+    return (1.0 - t) * Vec3::new(1.0, 1.0, 1.0) + t * Vec3::new(0.5, 0.7, 1.0);
+}
 
 fn main() {
     //Setup args
@@ -62,6 +71,17 @@ fn main() {
 
     println!("Generating a {}x{}@{}spp render of {}, saving to {}", image_width, image_height, samples_per_pixel, filename, output_filename);
 
+    // Setup camera rays
+    let aspect_ratio = image_width as f32 / image_height  as f32;
+    let viewport_height = 2.0;
+    let viewport_width = aspect_ratio * viewport_height;
+    let focal_length = 1.0;
+
+    let origin = Vec3::zero_vector();
+    let horizontal = Vec3::new(viewport_width, 0.0, 0.0);
+    let vertical = Vec3::new(0.0, viewport_height, 0.0);
+    let lower_left_corner = origin - (horizontal / 2.0) - (vertical / 2.0) - Vec3::new(0.0, 0.0, focal_length);
+
     //Generate image
     let mut data = Vec::new();
 
@@ -70,8 +90,15 @@ fn main() {
 
     for y in (0..image_height).rev() {
         for x in 0..image_width {
+            let u = x as f32 / (image_width - 1) as f32;
+            let v = y as f32 / (image_height - 1) as f32;
 
-            let color = Vec3::new(x as f32 / image_width as f32, y as f32 / image_height as f32, 0.0);
+            let ray = Ray::new(
+                origin,
+                lower_left_corner + (u * horizontal) + (v * vertical) - origin
+            );
+
+            let color = color(&ray);
 
             let ir = (255.99*color.x()) as u8;
             let ig = (255.99*color.y()) as u8;
